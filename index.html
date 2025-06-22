@@ -6,12 +6,13 @@
     <title>Interaktiver Finanzrechner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Midnight Slate -->
     <!-- Application Structure Plan: A single-page application built in one HTML file. The layout is designed for clarity and ease of use. A static header contains all user-input parameters. The main content area below is scrollable and contains a dynamic chart, a key metrics summary card, and two distinct, collapsible tables for the accumulation and decumulation phases. This structure was chosen to provide a clear hierarchy: high-level summary (chart, metrics), then granular detail (tables). The flow is intuitive: set your data, see the visual summary, then explore the year-by-year details on demand. -->
-    <!-- Visualization & Content Choices: 1. User Inputs -> Goal: Data Entry -> Presentation: Grouped input fields -> Interaction: Real-time updates. Justification: Immediate feedback. Method: HTML forms, JS. 2. Key Metrics -> Goal: Summarize -> Presentation: Highlighted stat cards. Interaction: Dynamic updates. Justification: Quick access to most important outcomes. Method: HTML/JS. 3. Wealth Growth -> Goal: Compare nominal vs. real wealth -> Viz: Line Chart. Interaction: Hover tooltips. Justification: Ideal for trends. Library: Chart.js. 4. Detailed Projections -> Goal: Organize detailed data -> Presentation: Collapsible HTML tables. Interaction: Show/hide full data. Justification: Reduces clutter, improves focus. Method: JS DOM manipulation. -->
+    <!-- Visualization & Content Choices: 1. User Inputs -> Goal: Data Entry -> Presentation: Grouped input fields -> Interaction: Real-time updates. Justification: Immediate feedback. Method: HTML forms, JS. 2. Key Metrics -> Goal: Summarize -> Presentation: Highlighted stat cards. Interaction: Dynamic updates. Justification: Quick access to most important outcomes. Method: HTML/JS. 3. Wealth Growth -> Goal: Compare nominal vs. real wealth -> Viz: Line Chart. Interaction: Hover tooltips & retirement annotation. Justification: Ideal for trends, annotation adds key context. Library: Chart.js + Annotation Plugin. 4. Detailed Projections -> Goal: Organize detailed data -> Presentation: Collapsible HTML tables. Interaction: Show/hide full data. Justification: Reduces clutter, improves focus. Method: JS DOM manipulation. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
@@ -170,14 +171,26 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 text-sky-500"><path d="M12 20V10M18 20V4M6 20V16"/></svg>
                     Wichtigste Kennzahlen
                 </h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-center">
                     <div>
-                        <p class="text-sm text-slate-400">Renteneintrittsalter</p>
-                        <p class="text-2xl font-bold text-white" id="metric-retirement-age">_</p>
+                        <p class="text-sm text-slate-400">Absolutes Vermögen (bei Renteneintritt)</p>
+                        <p class="text-2xl font-bold text-white" id="metric-retirement-assets">_</p>
                     </div>
                     <div>
-                        <p class="text-sm text-slate-400">Vermögen bei Renteneintritt</p>
-                        <p class="text-2xl font-bold text-white" id="metric-retirement-assets">_</p>
+                        <p class="text-sm text-slate-400">Kaufkraftbereinigt (bei Renteneintritt)</p>
+                        <p class="text-2xl font-bold text-white" id="metric-real-retirement-assets">_</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-400">Lebenskosten (jährl. bei Renteneintritt)</p>
+                        <p class="text-2xl font-bold text-white" id="metric-retirement-costs">_</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-400">Deckung durch Zinserträge (p.a.)</p>
+                        <p class="text-2xl font-bold text-green-400" id="metric-coverage-interest">_</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-400">Entnahme aus Vermögen (p.a.)</p>
+                        <p class="text-2xl font-bold text-red-400" id="metric-coverage-withdrawal">_</p>
                     </div>
                     <div>
                         <p class="text-sm text-slate-400">Jährl. Rendite (Annahme)</p>
@@ -348,6 +361,8 @@
             const retirementStartYear = new Date().getFullYear() + (retirementAge - currentAge);
             let lastAnnualNetSalary = 0;
             let assetsAtRetirement = 0;
+            let realAssetsAtRetirement = 0;
+            let firstYearRetirementInterest = 0;
             
             const fullData = [];
             for (let i = 0; i <= projectionDuration; i++) {
@@ -383,6 +398,9 @@
                 } else {
                     if (assetsAtRetirement === 0) {
                         assetsAtRetirement = currentAssets;
+                        const inflationFactorRetirement = Math.pow(1 + (Number(inputs.inflationRate.value) / 100), i);
+                        realAssetsAtRetirement = currentAssets / inflationFactorRetirement;
+                        firstYearRetirementInterest = netInvestmentGains;
                     }
                     retirementWithdrawal = lastAnnualNetSalary;
                     currentAssets += netInvestmentGains - retirementWithdrawal;
@@ -414,12 +432,18 @@
             
             document.getElementById('metric-retirement-age').textContent = retirementAge;
             document.getElementById('metric-retirement-assets').textContent = formatCurrency(assetsAtRetirement);
+            document.getElementById('metric-real-retirement-assets').textContent = formatCurrency(realAssetsAtRetirement);
+            document.getElementById('metric-retirement-costs').textContent = formatCurrency(lastAnnualNetSalary);
+            document.getElementById('metric-coverage-interest').textContent = formatCurrency(firstYearRetirementInterest);
+            const capitalWithdrawal = lastAnnualNetSalary > firstYearRetirementInterest ? lastAnnualNetSalary - firstYearRetirementInterest : 0;
+            document.getElementById('metric-coverage-withdrawal').textContent = formatCurrency(capitalWithdrawal);
             document.getElementById('metric-investment-return').textContent = `${inputs.investmentReturnRate.value}%`;
+
 
             document.getElementById('accumulation-title').textContent = `Ansparphase bis ${retirementAge}`;
             document.getElementById('retirement-title').textContent = `Entnahmephase (ab ${retirementAge} bis ${lifeExpectancy})`;
             renderTables(fullData, retirementStartYear);
-            renderChart(fullData);
+            renderChart(fullData, retirementStartYear);
             updateNetIncomeInfo();
         }
 
@@ -475,7 +499,7 @@
             toggleRetirementBtn.style.display = retirementData.length > 10 ? 'block' : 'none';
         }
         
-        function renderChart(data) {
+        function renderChart(data, retirementStartYear) {
             if (wealthChart) {
                 wealthChart.destroy();
             }
@@ -518,7 +542,10 @@
                     maintainAspectRatio: false,
                     scales: {
                         y: { ticks: { color: '#94a3b8', callback: (v) => new Intl.NumberFormat('de-DE', {notation: 'compact'}).format(v)}, grid: { color: '#334155' }},
-                        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' }}
+                        x: { ticks: { color: '#94a3b8', callback: function(val, index) {
+                            const year = this.getLabelForValue(val);
+                            return index % 5 === 0 ? year : '';
+                        }}, grid: { color: '#334155' }, }
                     },
                     plugins: {
                         legend: { labels: { color: '#d1d5db' }},
@@ -527,6 +554,30 @@
                             borderColor: '#374151', borderWidth: 1,
                             callbacks: {
                                 label: (c) => `${c.dataset.label || ''}: ${formatCurrency(c.parsed.y)}`
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: retirementStartYear,
+                                    xMax: retirementStartYear,
+                                    borderColor: 'rgba(239, 68, 68, 0.7)',
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        content: 'Renteneintritt',
+                                        position: 'start',
+                                        yAdjust: -15,
+                                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                                        color: '#ffffff',
+                                        font: {
+                                            size: 10
+                                        },
+                                        padding: 4,
+                                        borderRadius: 4,
+                                    }
+                                }
                             }
                         }
                     }
@@ -563,4 +614,4 @@
     </script>
 
 </body>
-</html>
+</ht
