@@ -4,51 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vermögensrechner</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Add these lines for Tailwind CSS and Chart.js support -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Serene Sky -->
     <!-- Application Structure Plan: A single-page application built in one HTML file. A top-level toggle switches between two user modes: "Accumulation" and "Retirement". Based on the mode, different input fields are shown, and the entire calculation logic and display (charts, metrics, tables) adapt. This provides a tailored experience for two distinct user journeys, preventing clutter and confusion. The core structure of inputs -> summary -> details is maintained in both modes for consistency. -->
     <!-- Visualization & Content Choices: 1. Mode Toggle -> Goal: User Journey Selection -> Presentation: Prominent toggle switch -> Interaction: Hides/shows relevant sections of the app. Justification: Creates two distinct, clear user paths. Method: JS event listener, class toggling. 2. Retiree Inputs -> Goal: Data entry for decumulation -> Presentation: Simplified input set (current assets, net income, expenses). Justification: Matches the mental model of a retiree. Method: HTML forms. 3. Retiree Logic -> Goal: Project wealth decumulation -> Viz: A single chart showing wealth decay. Justification: Focuses on the core question for a retiree: "How long will my money last?". Library: Chart.js. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc; /* slate-50 */
-        }
-        .chart-container {
-            position: relative;
-            height: 400px;
-            width: 100%;
-        }
-        .table-container::-webkit-scrollbar {
-            height: 8px;
-        }
-        .table-container::-webkit-scrollbar-track {
-            background-color: #e2e8f0;
-        }
-        .table-container::-webkit-scrollbar-thumb {
-            background-color: #94a3b8; /* slate-400 */
-            border-radius: 10px;
-        }
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #0ea5e9;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #0ea5e9;
-        }
-        .table-row-hidden {
-            display: none;
-        }
-        .input-error {
-            border-color: #ef4444 !important; /* red-500 */
-            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.4);
-        }
-    </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
 
@@ -69,8 +33,7 @@
                 <div class="flex items-center space-x-4">
                     <label for="modeToggle" class="block text-sm font-medium text-slate-500">Bereits im Ruhestand?</label>
                     <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="modeToggle" id="modeToggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
-                        <label for="modeToggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                        <input type="checkbox" name="modeToggle" id="modeToggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="modeToggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                     </div>
                 </div>
             </div>
@@ -301,6 +264,46 @@
                 <h2 class="text-xl font-semibold mb-1 text-slate-900">Vermögensentwicklung in der Entnahmephase</h2>
                 <p class="text-sm text-slate-500 mb-4">Die rote Linie markiert die angenommene Lebenserwartung.</p>
                 <div class="chart-container">
+                    <canvas id="retirementChart"></canvas>
+                </div>
+            </div>
+        </main>
+
+        <footer class="text-center py-10 text-slate-500 text-sm">
+            <p>Erstellt mit HTML, Tailwind CSS und Chart.js. Berechnungen sind Schätzungen.</p>
+        </footer>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
+                            <tr>
+                                <th class="p-4 font-semibold text-slate-600">Jahr</th>
+                                <th class="p-4 font-semibold text-slate-600">Alter</th>
+                                <th class="p-4 font-semibold text-slate-600">Lebenskosten (jährl.)</th>
+                                <th class="p-4 font-semibold text-slate-600">Lebenskosten (kaufkraftb.)</th>
+                                <th class="p-4 font-semibold text-slate-600">Zinsertrag (v. Steuer)</th>
+                                <th class="p-4 font-semibold text-slate-600">Zinsertrag (n. Steuer)</th>
+                                <th class="p-4 font-semibold text-slate-600" id="coverage-gap-header">Deckungslücke</th>
+                                <th class="p-4 font-semibold text-slate-600">Vermögen (nominal)</th>
+                                <th class="p-4 font-semibold text-slate-600">Vermögen (kaufkraftb.)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="retirement-table-body" class="divide-y divide-slate-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <footer class="text-center py-10 text-slate-500 text-sm">
+            <p>Erstellt mit HTML, Tailwind CSS und Chart.js. Berechnungen sind Schätzungen.</p>
+        </footer>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
                     <canvas id="retirementChart"></canvas>
                 </div>
             </div>
